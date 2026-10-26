@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Outlook ID Test</title>
+<script src="https://officeapis.public.onecdn.static.microsoft/1/office.js"></script>
+<style>body{font:14px Segoe UI,Arial,sans-serif;margin:16px;color:#242424}h1{font-size:20px}label{display:block;font-weight:600;margin-top:12px}textarea,input{box-sizing:border-box;width:100%;padding:6px;margin-top:4px}textarea{height:90px}button{margin:12px 8px 0 0;padding:8px 12px}#status{margin-top:12px}@media(prefers-color-scheme:dark){body{background:#202020;color:#eee}textarea,input{background:#292929;color:#fff;border:1px solid #888}}</style></head>
+<body><h1>Outlook ID Test</h1><p>Oeffne eine einzelne E-Mail. Die Werte unten kommen direkt aus Office.js.</p>
+<label>Subject<input id="subject" readonly></label>
+<label>itemId<textarea id="itemId" readonly></textarea></label>
+<label>conversationId<textarea id="conversationId" readonly></textarea></label>
+<label>internetMessageId<textarea id="internetMessageId" readonly></textarea></label>
+<label>REST-v2-ID (aus itemId)<textarea id="restId" readonly></textarea></label>
+<button id="copy" type="button">Alle Werte kopieren</button><button id="refresh" type="button">Aktualisieren</button><p id="status" role="status"></p>
+<script>
+/* global Office */
+function val(id,v){document.getElementById(id).value=v||'';}
+function load(){try{const item=Office.context.mailbox.item;if(!item)throw new Error('Keine Nachricht gefunden.');
+val('subject',item.subject);val('itemId',item.itemId);val('conversationId',item.conversationId);val('internetMessageId',item.internetMessageId);
+let r='';try{r=Office.context.mailbox.convertToRestId(item.itemId,Office.MailboxEnums.RestVersion.v2_0);}catch(e){r='Konvertierung fehlgeschlagen: '+e.message;}val('restId',r);document.getElementById('status').textContent='IDs gelesen.';}catch(e){document.getElementById('status').textContent=e.message;}}
+Office.onReady(()=>{load();document.getElementById('refresh').addEventListener('click',load);document.getElementById('copy').addEventListener('click',async()=>{const ids=['subject','itemId','conversationId','internetMessageId','restId'];const t=ids.map(x=>x+'='+document.getElementById(x).value).join('\n');try{await navigator.clipboard.writeText(t);document.getElementById('status').textContent='Werte kopiert.';}catch(e){document.getElementById('status').textContent='Kopieren blockiert. Werte bitte manuell markieren.';}});});
+</script></body></html>
