@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Outlook Org-Link</title>
+  <script src="https://officeapis.public.onecdn.static.microsoft/1/office.js"></script>
+  <style>
+    body{font:14px Segoe UI,Arial,sans-serif;margin:16px;color:#242424}
+    h1{font-size:20px} textarea{box-sizing:border-box;width:100%;height:130px;padding:8px}
+    button{margin-top:12px;padding:9px 14px;background:#0f6cbd;color:#fff;border:0;border-radius:4px;font-weight:600}
+    #status{min-height:20px}@media(prefers-color-scheme:dark){body{background:#202020;color:#eee}textarea{background:#292929;color:#fff;border:1px solid #888}}
+  </style>
+</head>
+<body>
+  <h1>Outlook Org-Link</h1>
+  <p>Erzeugt einen Org-mode-Link zur geöffneten Nachricht.</p>
+  <textarea id="result" readonly></textarea>
+  <button id="copy" type="button">Org-Link kopieren</button>
+  <p id="status" role="status" aria-live="polite"></p>
+  <script>
+    /* global Office */
+    const result = document.getElementById('result');
+    const statusEl = document.getElementById('status');
+    function clean(value){return String(value||'').replace(/[\[\]\r\n]+/g,' ').replace(/\s+/g,' ').trim();}
+    function build(){
+      const item=Office.context.mailbox.item;
+      if(!item || !item.conversationId) throw new Error('Keine lesbare E-Mail oder keine conversationId gefunden.');
+      const url='https://outlook.cloud.microsoft/mail/inbox/id/'+encodeURIComponent(item.conversationId);
+      const subject=clean(item.subject||'Ohne Betreff');
+      const sender=clean((item.from && (item.from.displayName||item.from.emailAddress)) || (item.sender && (item.sender.displayName||item.sender.emailAddress)) || '');
+      return `[[${url}][MESSAGE: ${subject}${sender?' ('+sender+')':''}]]`;
+    }
+    async function copy(){
+      try{await navigator.clipboard.writeText(result.value);statusEl.textContent='Org-Link wurde kopiert.';}
+      catch(e){result.focus();result.select();const ok=document.execCommand('copy');statusEl.textContent=ok?'Org-Link wurde kopiert.':'Kopieren blockiert. Bitte den Text markieren und Strg+C drücken.';}
+    }
+    Office.onReady(()=>{try{result.value=build();statusEl.textContent='Link bereit.';}catch(e){statusEl.textContent=e.message;document.getElementById('copy').disabled=true;}document.getElementById('copy').addEventListener('click',copy);});
+  </script>
+</body>
+</html>
