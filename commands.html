@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Outlook Org-Link Command</title>
+  <script src="https://officeapis.public.onecdn.static.microsoft/1/office.js"></script>
+  <script>
+    /* global Office */
+    function clean(value) {
+      return String(value || '').replace(/[\[\]\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function buildOrgLink() {
+      const item = Office.context.mailbox.item;
+      if (!item || !item.conversationId) {
+        throw new Error('Keine lesbare E-Mail oder keine conversationId gefunden.');
+      }
+      const url = 'https://outlook.cloud.microsoft/mail/inbox/id/' + encodeURIComponent(item.conversationId);
+      const subject = clean(item.subject || 'Ohne Betreff');
+      const senderObject = item.from || item.sender;
+      const sender = clean(senderObject && (senderObject.displayName || senderObject.emailAddress));
+      return `[[${url}][MESSAGE: ${subject}${sender ? ' (' + sender + ')' : ''}]]`;
+    }
+
+    async function copyOrgLink(event) {
+      try {
+        const link = buildOrgLink();
+        await navigator.clipboard.writeText(link);
+        Office.context.mailbox.item.notificationMessages.replaceAsync('orgLinkStatus', {
+          type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
+          message: 'Org-Link wurde in die Zwischenablage kopiert.',
+          icon: 'Icon.16',
+          persistent: false
+        }, function () { event.completed(); });
+      } catch (error) {
+        try {
+          Office.context.mailbox.item.notificationMessages.replaceAsync('orgLinkStatus', {
+            type: Office.MailboxEnums.ItemNotificationMessageType.ErrorMessage,
+            message: 'Kopieren fehlgeschlagen: ' + (error && error.message ? error.message : String(error))
+          }, function () { event.completed(); });
+        } catch (_) {
+          event.completed();
+        }
+      }
+    }
+
+    Office.onReady(function () {
+      Office.actions.associate('copyOrgLink', copyOrgLink);
+    });
+  </script>
+</head>
+<body></body>
+</html>
